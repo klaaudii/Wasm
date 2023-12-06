@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Number Guesser Game</title>
+    <style>
+        section.container { margin: 3em; }
+    </style>
+<!--    <script type="text/javascript" charset="utf-8" src="teavm/stdout.js"></script>-->
+    <script type="text/javascript" charset="utf-8" src="wasm/complexlogic.wasm-runtime.js"></script>
+</head>
+<body>
+<canvas id="canvas" width="512" height="512"></canvas>
+<span id="frameRate"></span>
+
+<!--	<p>Guess the number between 1 and 10:</p>-->
+<!--	<button type="button" onclick="playTheGame(1)">1</button>-->
+<!--	<button type="button" onclick="playTheGame(2)">2</button>-->
+<!--	<button type="button" onclick="playTheGame(3)">3</button>-->
+<!--	<button type="button" onclick="playTheGame(4)">4</button>-->
+<!--	<button type="button" onclick="playTheGame(5)">5</button>-->
+<!--	<button type="button" onclick="playTheGame(6)">6</button>-->
+<!--	<button type="button" onclick="playTheGame(7)">7</button>-->
+<!--	<button type="button" onclick="playTheGame(8)">8</button>-->
+<!--	<button type="button" onclick="playTheGame(9)">9</button>-->
+<!--	<button type="button" onclick="playTheGame(10)">10</button>-->
+<!--	-->
+<!--	<script>-->
+
+<!--	let magicNumber = 0;-->
+<!--	-->
+<!--	function playTheGame(number) {-->
+<!--        if (number==magicNumber) {-->
+<!--			alert("You guessed right! It is " +magicNumber);-->
+<!--		} else {-->
+<!--			alert("Wrong! Guess again!");-->
+<!--		}-->
+<!--    }-->
+<!--	-->
+
+
+<script>
+
+    function setMagicNumber(number) {
+        console.log("WASM code has called the JS setMagicNumber method.")
+        magicNumber = number
+        console.log("WASM set the magic number to: " + magicNumber)
+    }
+
+    const cnvs_size = 512;
+    const object_radius = 3;
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    function drawBall(x, y) {
+        ctx.beginPath();
+        ctx.fillRect(x, y, object_radius, object_radius)
+        //ctx.arc(this.xx, this.yy, object_radius, 0, Math.PI * 2);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    var animation_wasm;
+    var counter = 0;
+    var lastTime;
+    var tm;
+
+
+
+    TeaVM.wasm.load("wasm/complexlogic.wasm", {
+        installImports(o, controller) {
+            // function putwchars(address, count) {
+            //     let instance = controller.instance;
+            //     let memory = new Int8Array(instance.exports.memory.buffer);
+            //     let string = "";
+            //     for (let i = 0; i < count; ++i) {
+            //         string += $rt_putStdoutCustom(memory[address++]);
+            //     }
+            // }
+            // o.teavm.putwcharsOut = putwchars;
+            // o.teavm.putwcharsErr = putwchars;
+            //
+            // o.teavm.drawBall = drawBall;
+            // o.teavm.setMagicNumber = setMagicNumber;
+        },
+    })
+        .then(
+            teavm => {
+                this.instance = teavm.instance;
+
+                // console.log(this.instance)
+                this.instance.exports.initBalls();
+                // this.instance.exports.move();
+
+
+
+
+
+                function animate() {
+
+                    counter++;
+                    if (counter >= 100 && counter % 100 === 0) {
+                        tm = Date.now();
+                        frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+                        lastTime = tm;
+                    }
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    this.instance.exports.moveBalls();
+                    this.instance.exports.solveCollision();
+                     this.instance.exports.drawBalls();
+
+                    //this.instance.exports.animateJ();
+
+
+                    requestAnimationFrame(animate);
+
+                }
+
+                function animate_100() {
+
+                    counter++;
+                    if (counter >= 100 && counter % 1000 === 0) {
+                        tm = Date.now();
+                        frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+                        lastTime = tm;
+                    }
+                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    this.instance.exports.moveBalls();
+                    this.instance.exports.solveCollision();
+                     this.instance.exports.drawBalls();
+
+
+                    requestAnimationFrame(animate);
+
+                }
+                //
+                // lastTime = Date.now();
+                // requestAnimationFrame(animate);
+
+
+    })
+
+
+
+	
+	</script>
+	
+	
+</body>
+</html>
