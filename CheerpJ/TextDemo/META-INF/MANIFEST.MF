@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.9.4
+Created-By: 1.8.0_241-b07 (Oracle Corporation)
+Main-Class: components.TextDemo
+X-COMMENT: Main-Class will be added automatically by build
+Codebase: *.oracle.com
+Permissions: sandbox
+Application-Name: Text Demo
+
+Name: components/TextDemo.jnlp
+SHA-256-Digest: zcj0Sd0Hqz9Ih1hoGmfuYwZAw6V7E3a8LmW0YqBdKyw=
+
+Name: components/TextDemo$1.class
+SHA-256-Digest: 4Pk5jC7CzyQNOqEhG4S88lEi9TafgJwWFwR+Vf4OjtM=
+
+Name: components/TextDemo.class
+SHA-256-Digest: nkJGArQVHTqnYE83Jh88ueRJKL1oAR9SAbiFD84KaQI=
+
