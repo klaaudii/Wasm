@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport">
+    <title>Ball in JS</title>
+</head>
+<body>
+<canvas id="canvas" width="512" height="512"></canvas>
+<br>
+<span id="frameRate"></span>
+<script>
+
+    const canvas = document.getElementById("canvas");
+    const frameRate = document.getElementById("frameRate");
+    const ctx = canvas.getContext("2d");
+
+
+    const cnvs_size = 512;
+    ctx.canvas.width = cnvs_size;
+    ctx.canvas.height = cnvs_size;
+    const pixel_count = cnvs_size * cnvs_size;
+    //velkost pamate pre canvas v bajtoch, teda 8-bit view
+    const cnvs_memory_size_8 = pixel_count * 4;   //*4 lebo rgba
+    const cnvs_memory_size_32 = pixel_count;     //32-bit view
+    const obj_count = 10000;
+    const obj_memory_size_8 = 20;
+    const obj_memory_size_32 = obj_memory_size_8/4;
+    const object_base_32 = cnvs_memory_size_32;
+    const object_base_8 = cnvs_memory_size_8;
+    const object_radius = 3;
+    const x_offset = 0;
+    const y_offset = 4;
+    const vx_offset = 8;
+    const vy_offset = 12;
+    const color_offset = 16;
+    const bg_address_copy = object_base_8 + 20*obj_count
+
+    const buffer = new ArrayBuffer(cnvs_memory_size_8*2 + obj_count*obj_memory_size_8); //in bytes
+    const mem_i32 = new Uint32Array(buffer);    //32-bit view
+    let mem_i8 = new Uint8Array(buffer);    //8-bit view
+
+    // for (let i = 0; i < cnvs_memory_size_32; i++) {
+    //     mem_i32[i] = 0xff_ff_00_00;
+    // }
+
+    const buffer2 = new ArrayBuffer(cnvs_memory_size_8)
+    let mem_bg = new Uint8Array(buffer);
+
+    for (let i = 0; i < pixel_count*4; i += 4) {
+        mem_bg[i] = 0
+        mem_bg[i + 1] = 116
+        mem_bg[i + 2] = 0
+        mem_bg[i + 3] = 116
+    }
+
+
+
+
+
+    for (let i = 0; i < obj_count * obj_memory_size_32; i+= obj_memory_size_32){
+        mem_i32[object_base_32 + i] = Math.floor(Math.random() * (cnvs_size-2*object_radius) + object_radius); //x
+        mem_i32[object_base_32 + i + 1] = Math.floor(Math.random() * (cnvs_size-2*object_radius) + object_radius); //y
+        tmp = (Math.round(Math.random() * 4) - 2);
+        mem_i32[object_base_32 + i + 2] = tmp === 0 ? 1 : tmp;  //vx
+        tmp = (Math.round(Math.random() * 4) - 2);
+        mem_i32[object_base_32 + i + 3] = tmp === 0 ? 1 : tmp; //vy
+        mem_i32[object_base_32 + i + 4] = 0xff_00_00_ff //color
+    }
+
+    const image_data = new ImageData(
+        new Uint8ClampedArray(buffer,0, cnvs_memory_size_8),
+        cnvs_size,
+        cnvs_size);
+
+    function set_pixel(x, y, c){
+        if (x >= cnvs_size) return;
+        if (y >= cnvs_size) return;
+        let address = (y * cnvs_size + x);
+        mem_i32[address] = c;
+    }
+
+    function draw_object(x, y, r, c){
+        set_pixel(x, y, c);
+        set_pixel(x+1, y, c);
+        set_pixel(x+2, y, c);
+        set_pixel(x, y+1, c);
+        set_pixel(x+1, y+1, c);
+        set_pixel(x+2, y+1, c);
+        set_pixel(x, y+2, c);
+        set_pixel(x+1, y+2, c);
+        set_pixel(x+2, y+2, c);
+    }
+
+    function get_obj_attr(obj_number, attr_offset){
+        let address = obj_number * 5 + object_base_32 + attr_offset/4;
+        return mem_i32[address];
+    }
+
+    function set_obj_attr(obj_number, attr_offset, value) {
+        let address = obj_number * 5 + object_base_32 + attr_offset/4
+        mem_i32[address] = value;
+    }
+
+
+    function draw_objects(){
+        for (let i = 0; i < obj_count; i++) {
+            let xi = get_obj_attr(i, x_offset);
+            let yi = get_obj_attr(i, y_offset);
+            let ci = get_obj_attr(i, color_offset);
+            draw_object(xi, yi, object_radius, ci);
+        }
+    }
+
+    function clear_canvas() {
+        // Array.from(mem_bg)
+        // mem_i8 = mem_bg.slice();
+
+        for (let i = 0; i < cnvs_memory_size_32; i++){
+            mem_i32[i] = 0xff_ff_00_00
+        }
+    }
+
+
+    function move_objects() {
+        for (let i = 0; i < obj_count; i++) {
+            let xi = get_obj_attr(i, x_offset);
+            let yi = get_obj_attr(i, y_offset);
+            let vxi = get_obj_attr(i, vx_offset);
+            let vyi = get_obj_attr(i, vy_offset);
+            xi = (vxi + xi) & (cnvs_size-1);
+            yi = (vyi + yi) & (cnvs_size-1);
+            set_obj_attr(i, x_offset, xi);
+            set_obj_attr(i, y_offset, yi);
+        }
+    }
+
+    function jsFib(n) {
+        if (n <= 2) return 1;
+        return jsFib(n-1) + jsFib(n-2);
+    }
+
+
+    function find_collisions() {
+        //let mimo funkcie, na zaciatku a pomedzi
+        let x1;
+        let x2;
+
+        let y1;
+        let y2;
+
+        let dx;
+        let dy, dist, vx1, vy1, vx2, vy2;
+
+        for (let i = 0; i < obj_count; i++){
+            // let fib = jsFib(15)
+            x1 = get_obj_attr(i, x_offset);
+            y1 = get_obj_attr(i, y_offset);
+            for (let j = 0; j < obj_count; j++) {
+                if (i === j) break;
+                x2 = get_obj_attr(j, x_offset);
+                y2 = get_obj_attr(j, y_offset);
+                dx = x2 - x1;
+                dy = y2 - y1;
+                dist = (dx*dx + dy*dy)**0.5;
+                if (dist === 0) dist = 1;
+                if (2*object_radius > dist) {
+                    vx1 = -1 * get_obj_attr(i, vx_offset);
+                    set_obj_attr(i, vx_offset, vx1);
+                     vy1 = -1 * get_obj_attr(i, vy_offset);
+                    set_obj_attr(i, vy_offset, vy1);
+                     vx2 = -1 * get_obj_attr(j, vx_offset);
+                    set_obj_attr(j, vx_offset, vx2);
+                    vy2 = -1 * get_obj_attr(j, vy_offset);
+                    set_obj_attr(j, vy_offset, vy2);
+                    x1 = (x1 + vx1) & 511
+                    y1 = (y1 + vy1) & 511
+                    set_obj_attr(i, x_offset, x1);
+                    set_obj_attr(i, y_offset, y1);
+                    x2 = (x2 + vx2) & 511
+                    y2 = (y2 + vy2) & 511
+                    set_obj_attr(j, x_offset, x2);
+                    set_obj_attr(j, y_offset, y2);
+                }
+            }
+        }
+    }
+
+    var counter = 0;
+    var lastTime;
+    var tm;
+
+    function animation_js(){
+        counter++;
+        if (counter >= 100 && counter % 100 === 0) {
+            tm = Date.now();
+            frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+            lastTime = tm;
+
+        }
+
+            clear_canvas();
+            move_objects();
+            find_collisions();
+            draw_objects();
+
+            ctx.putImageData(image_data, 0, 0);
+            requestAnimationFrame(animation_js);
+         //
+        //
+
+    }
+
+    function animation_js_100(){
+        counter++;
+        if (counter >= 100 && counter % 1000 === 0) {
+            tm = Date.now();
+            frameRate.innerHTML = (10000.0/(tm - lastTime)).toString();
+            lastTime = tm;
+        }
+
+        if (counter % 200 === 0) {
+            ctx.putImageData(image_data, 0, 0);
+            requestAnimationFrame(animation_js_100);
+        } else {
+               // clear_canvas();
+               // move_objects();
+                  find_collisions();
+               //   draw_objects();
+            animation_js_100();
+        }
+    }
+
+    lastTime = Date.now();
+      requestAnimationFrame(animation_js);
+    // requestAnimationFrame(animation_js_100);
+
+
+</script>
+</body>
+</html>

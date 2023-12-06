@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport">
+    <title>Ball in JS</title>
+</head>
+<body>
+<canvas id="canvas" width="512" height="512"></canvas>
+<br>
+<span id="frameRate"></span>
+<script>
+
+    const canvas = document.getElementById("canvas");
+    const frameRate = document.getElementById("frameRate");
+    const ctx = canvas.getContext("2d");
+
+    const cnvs_size = 512;
+    const pixel_count = cnvs_size * cnvs_size;
+    //velkost pamate pre canvas v bajtoch, teda 8-bit view
+    const cnvs_memory_size_8 = pixel_count * 4;   //*4 lebo rgba
+    const cnvs_memory_size_32 = pixel_count;     //32-bit view
+    const obj_count = 5000;
+    const obj_memory_size_8 = 12;
+    const obj_memory_size_32 = obj_memory_size_8/4;
+    const object_base_32 = cnvs_memory_size_32;
+    const object_base_8 = cnvs_memory_size_8;
+    const object_radius = 3;
+    const address_offset_8 = 0;
+    const vx_offset_8 = 4;
+    const vy_offset_8 = 8;
+    const obj_color = 0xff_00_00_ff;
+
+
+
+    const buffer = new ArrayBuffer(cnvs_memory_size_8 + obj_count*obj_memory_size_8); //in bytes
+    const mem_i32 = new Uint32Array(buffer);    //32-bit view
+
+
+    for (let i = 0; i < obj_count * obj_memory_size_32; i+= obj_memory_size_32){
+        mem_i32[object_base_32 + i] = Math.floor(Math.random() * cnvs_memory_size_32); //address
+        tmp = (Math.round(Math.random() * 4) - 2);
+        mem_i32[object_base_32 + i + 1] = tmp === 0 ? 1 : -1;  //vx
+        tmp = (Math.round(Math.random() * 4) - 2);
+        mem_i32[object_base_32 + i + 2] = tmp === 0 ? 1 : -1; //vy
+    }
+
+    const image_data = new ImageData(
+        new Uint8ClampedArray(buffer,0, cnvs_memory_size_8),
+        cnvs_size,
+        cnvs_size);
+
+
+
+    function clear_canvas() {
+        for (let i = 0; i < cnvs_memory_size_32; i++){
+            mem_i32[i] = 0xff_ff_00_00
+        }
+    }
+
+    function draw_objects() {
+        for (let i = 0; i < obj_count * obj_memory_size_32; i += obj_memory_size_32){
+            let address = mem_i32[cnvs_memory_size_32+i];
+            mem_i32[(address & cnvs_memory_size_32-1)] = obj_color;
+            mem_i32[(address-1) & cnvs_memory_size_32-1] = obj_color;
+            mem_i32[(address+1) & cnvs_memory_size_32-1] = obj_color;
+            mem_i32[(address+cnvs_size+1) & cnvs_memory_size_32-1] = obj_color;
+            mem_i32[(address+cnvs_size-1) & cnvs_memory_size_32-1] = obj_color;
+            mem_i32[(address+cnvs_size) & cnvs_memory_size_32-1] = obj_color;
+            mem_i32[(address-cnvs_size-1) & cnvs_memory_size_32-1] = obj_color;
+            mem_i32[(address-cnvs_size+1) & cnvs_memory_size_32-1] = obj_color;
+            mem_i32[(address-cnvs_size) & cnvs_memory_size_32-1] = obj_color;
+        }
+    }
+
+    function move_objects() {
+        for (let i = 0; i < obj_count * obj_memory_size_32; i += obj_memory_size_32){
+            let address = mem_i32[cnvs_memory_size_32+i];
+            let vx = mem_i32[cnvs_memory_size_32+i+1];
+            let vy = mem_i32[cnvs_memory_size_32+i+2];
+            mem_i32[cnvs_memory_size_32+i] = address + vx + cnvs_size * vy;
+        }
+    }
+
+
+    function find_collisions() {
+        let y = cnvs_size;
+        for (let i = 0; i < obj_count * obj_memory_size_32; i += obj_memory_size_32) {
+            let ai = mem_i32[cnvs_memory_size_32+i];
+            let vxi = mem_i32[cnvs_memory_size_32+i+1];
+            let vyi = mem_i32[cnvs_memory_size_32+i+2];
+            for (let j = 0; j < obj_count * obj_memory_size_32; j += obj_memory_size_32) {
+                if (i === j) continue;
+                let aj =  mem_i32[cnvs_memory_size_32+j];
+                if (aj - ai > cnvs_size*2+2) continue;
+                if (ai - aj > cnvs_size*2+2) continue;
+                if (aj-2*y-2 <= ai && ai <=  aj-2*y+2 ||
+                    aj-y-2 <= ai && ai <=  aj-y+2 ||
+                    aj-2 <= ai && ai <=  aj+2 ||
+                    aj+y-2 <= ai && ai <=  aj+y+2 ||
+                    aj+2*y-2 <= ai && ai <=  aj+2*y+2) {
+                    let vxj = mem_i32[cnvs_memory_size_32+j+1];
+                    let vyj = mem_i32[cnvs_memory_size_32+j+2];
+                    mem_i32[cnvs_memory_size_32+i+1] = -vxi;
+                    mem_i32[cnvs_memory_size_32+i+2] = -vyi;
+                    mem_i32[cnvs_memory_size_32+i] = ai +  vxi + cnvs_size * vyi;
+                    mem_i32[cnvs_memory_size_32+j+1] = -vxj;
+                    mem_i32[cnvs_memory_size_32+j+2] = -vyj;
+                    mem_i32[cnvs_memory_size_32+j] = aj +  10*vxj +  10*cnvs_size * vyj;
+                }
+            }
+        }
+    }
+
+    // function find_collisions() {
+    //     for (let i = 0; i < obj_count * obj_memory_size_32; i += obj_memory_size_32) {
+    //         let xi = mem_i32[cnvs_memory_size_32+i] % cnvs_size;
+    //         let yi = (mem_i32[cnvs_memory_size_32+i] - xi) / cnvs_size ;
+    //         let vxi = mem_i32[cnvs_memory_size_32+i+1];
+    //         let vyi = mem_i32[cnvs_memory_size_32+i+2];
+    //         for (let j = 0; j < obj_count * obj_memory_size_32; j += obj_memory_size_32) {
+    //             if (i === j) continue;
+    //             let xj = mem_i32[cnvs_memory_size_32+j] % cnvs_size ;
+    //             let yj = (mem_i32[cnvs_memory_size_32+j] - xj) / cnvs_size ;
+    //             let dx = xj - xi;
+    //             let dy = yj - yi;
+    //             let dist = (dx*dx + dy*dy)**0.5;
+    //             if (dist === 0) dist = 1;
+    //             if (2*object_radius > dist) {
+    //                 let vxj = mem_i32[cnvs_memory_size_32+j+1];
+    //                 let vyj = mem_i32[cnvs_memory_size_32+j+2];
+    //                 mem_i32[cnvs_memory_size_32 + j + 1] = -vxj;
+    //                 mem_i32[cnvs_memory_size_32 + j + 2] = -vyj;
+    //                 console.log(mem_i32[cnvs_memory_size_32 + j])
+    //                 mem_i32[cnvs_memory_size_32 + j] = xj-vxj + (yj-vyj) * cnvs_size;
+    //                 console.log(mem_i32[cnvs_memory_size_32 + j])
+    //                 mem_i32[cnvs_memory_size_32 + i + 1] = -vxi;
+    //                 mem_i32[cnvs_memory_size_32 + i + 2] = -vyi;
+    //                 mem_i32[cnvs_memory_size_32 + i] = xi-vxi + (yi-vyi) * cnvs_size;
+    //             }
+    //         }
+    //     }
+    // }
+
+    var counter = 0;
+    var lastTime;
+    var tm;
+
+    function animation_js(){
+        counter++;
+        if (counter >= 100 && counter % 100 === 0) {
+            tm = Date.now();
+            frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+            lastTime = tm;
+
+        }
+
+        clear_canvas();
+         move_objects();
+         find_collisions();
+         draw_objects();
+        //
+        ctx.putImageData(image_data, 0, 0);
+        requestAnimationFrame(animation_js);
+        //
+        //
+
+    }
+
+    function animation_js_100(){
+        counter++;
+        if (counter >= 100 && counter % 1000 === 0) {
+            tm = Date.now();
+            frameRate.innerHTML = (10000.0/(tm - lastTime)).toString();
+            lastTime = tm;
+        }
+
+        if (counter % 200 === 0) {
+            ctx.putImageData(image_data, 0, 0);
+            requestAnimationFrame(animation_js_100);
+        } else {
+             // clear_canvas();
+             // move_objects();
+             // find_collisions();
+             draw_objects();
+            animation_js_100();
+        }
+    }
+
+    lastTime = Date.now();
+    requestAnimationFrame(animation_js);
+    // requestAnimationFrame(animation_js_100);
+
+
+
+</script>
+</body>
+</html>

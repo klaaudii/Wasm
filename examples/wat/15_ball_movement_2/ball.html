@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initialscale=1.0">
+    <title>Ball movement</title>
+</head>
+<body style="background-color: white;">
+<canvas id="cnvs" width="512" height="512"></canvas>
+<br>
+<span id="frameRate"></span>
+<script>
+    const canvas = document.getElementById("cnvs");
+    const frameRate = document.getElementById("frameRate");
+    const ctx = canvas.getContext("2d");
+
+    const cnvs_size = 512;
+    ctx.canvas.width = cnvs_size;
+    ctx.canvas.height = cnvs_size;
+    ctx.clearRect(0, 0, cnvs_size, cnvs_size);
+    const bg_color = 500; //background color (BLUE)
+    const pixel_count = cnvs_size * cnvs_size;
+    const object_count = 10000;    //the best nasobok 4
+    const object_radius = 3;
+    const object_base_8 = pixel_count*4;
+    const x_offset = 0;
+    const y_offset = 4;
+    const vx_offset = 8;
+    const vy_offset = 12;
+    const color_offset = 16;
+    const x_base_8 = pixel_count*4;
+    const y_base_8 = x_base_8 + 4 * object_count;
+    const vx_base_8 = y_base_8 + 4 * object_count;
+    const vy_base_8 = vx_base_8 + 4 * object_count;
+    const color_base_8 = vy_base_8 + 4 * object_count;
+    const bg_address_copy = color_base_8 + 4 * object_count;
+    const ball_color_address_copy = bg_address_copy + pixel_count*4;
+
+    const memory = new WebAssembly.Memory({initial:300}); //for 1500 balls initial = 33
+    const mem_i8 = new Uint8Array(memory.buffer); // 8-bit view
+    const mem_i32 = new Uint32Array(memory.buffer); //32-bit view
+
+
+    const object_base_32 = object_base_8/4;
+
+    const importObject = {
+        env: {
+            buffer: memory,
+            cnvs_size: cnvs_size,
+            bg_color: bg_color,
+            object_radius: object_radius,
+            object_count: object_count,
+            objects_base: object_base_8,
+            x_offset: x_offset,
+            y_offset: y_offset,
+            vx_offset: vx_offset,
+            vy_offset: vy_offset,
+            color_offset: color_offset,
+            x_base: x_base_8,
+            y_base: y_base_8,
+            vx_base: vx_base_8,
+            vy_base: vy_base_8,
+            start_bg_mem: 0,
+            obj_color: 100,
+            bg_address_copy: bg_address_copy,
+            ball_color_address_copy: ball_color_address_copy,
+            log: function(x1, y1, x2, y2) { // log n factorial to output tag
+                console.log(`${x1},  ${y1}, ${x2},  ${y2}`); }
+        }
+    };
+
+
+    const image_data = new ImageData( new Uint8ClampedArray(memory.buffer, 0,
+            pixel_count*4),
+        cnvs_size,
+        cnvs_size );
+
+
+    // nastavenie farby pozadia
+    for (let i = 0; i < pixel_count*4; i += 4) {
+        mem_i8[bg_address_copy + i] = 0
+        mem_i8[bg_address_copy + i + 1] = 225
+        mem_i8[bg_address_copy+ i + 2] = 0
+        mem_i8[bg_address_copy+ i + 3] = 225
+    }
+
+    mem_i8[ball_color_address_copy] = 0;
+    mem_i8[ball_color_address_copy + 1] = 0;
+    mem_i8[ball_color_address_copy + 2] = 225;
+    mem_i8[ball_color_address_copy + 3] = 225;
+
+
+    for (let i = 0; i < object_count; i++){
+        mem_i32[x_base_8/4 + i] = Math.floor(Math.random() * (cnvs_size-2*object_radius) + object_radius); //x
+        mem_i32[y_base_8/4 + i] = Math.floor(Math.random() * (cnvs_size-2*object_radius) + object_radius); //y
+        tmp = (Math.round(Math.random() * 4) - 2);
+        mem_i32[vx_base_8/4 + i] = tmp === 0 ? 1 : -1;  //vx
+        tmp = (Math.round(Math.random() * 4) - 2);
+        mem_i32[vy_base_8/4 + i] = tmp === 0 ? 1 : -1; //vy
+        mem_i32[color_base_8/4 + i] = 0x00_00_ff_ff //color
+    }
+
+    ctx.putImageData(image_data, 0, 0);
+
+
+
+
+    // for (let i = 0; i < object_base_32; i++ ){
+    //     mem_i32[i] = 0xff_ff_00_00;
+    // }
+
+    console.log(mem_i32)
+
+
+    var animation_wasm;
+    var counter = 0;
+    var lastTime;
+    var tm;
+
+    function animate() {
+
+        counter++;
+        if (counter >= 100 && counter % 100 === 0) {
+            tm = Date.now();
+            frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+            lastTime = tm;
+
+        }
+        // wasm function that generates the image data
+        animation_wasm();
+       ctx.putImageData(image_data, 0, 0); // render pixel data
+         requestAnimationFrame(animate);
+
+    }
+
+    function animate_100(){
+        counter++;
+        if (counter >= 100 && counter % 1000 === 0) {
+            tm = Date.now();
+            frameRate.innerHTML = (10000.0/(tm - lastTime)).toString();
+            lastTime = tm;
+        }
+        if (counter % 200 === 0) {
+            ctx.putImageData(image_data, 0, 0); // render pixel data
+            requestAnimationFrame(animate_100);
+        }
+        else {
+             animation_wasm();
+            animate_100();
+        }
+    }
+
+    (async () => {
+        let obj = await WebAssembly.instantiateStreaming(
+            fetch('ball.wasm'),importObject );
+        animation_wasm = obj.instance.exports.main;
+        lastTime = Date.now();
+       requestAnimationFrame(animate);
+       // requestAnimationFrame(animate_100);
+    })();
+</script>
+</body>
+</html>
