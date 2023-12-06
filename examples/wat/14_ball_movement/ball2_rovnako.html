@@ -6,6 +6,7 @@
     <title>Ball in JS</title>
 </head>
 <body>
+    <p>JavaScript</p>
 <canvas id="canvas" width="512" height="512"></canvas>
 <br>
 <span id="frameRate"></span>
@@ -23,7 +24,7 @@
     //velkost pamate pre canvas v bajtoch, teda 8-bit view
     const cnvs_memory_size_8 = pixel_count * 4;   //*4 lebo rgba
     const cnvs_memory_size_32 = pixel_count;     //32-bit view
-    const obj_count = 10000;
+    const obj_count = 3000;
     const obj_memory_size_8 = 20;
     const obj_memory_size_32 = obj_memory_size_8/4;
     const object_base_32 = cnvs_memory_size_32;
@@ -194,7 +195,7 @@
         counter++;
         if (counter >= 100 && counter % 100 === 0) {
             tm = Date.now();
-            frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+            frameRate.innerHTML = "fps: " + (100000.0/(tm - lastTime)).toString();
             lastTime = tm;
 
         }
