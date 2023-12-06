@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>SimpleL</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<!--<script type="module" src="./main.js"></script>-->
+
+<body>
+<textarea id="userCode" rows="10" cols="50">2+3</textarea>
+<button onclick="compile()">Compile to Wasm</button>
+<button onclick="run()">Run Wasm</button>
+<script type="module">
+
+    import {compileToWasm} from './main.js';
+    let wasmBinary;
+    window.compile = compile
+    window.run = run
+
+    function compile(){
+        wasmBinary = compileToWasm()
+        console.log(wasmBinary)
+    }
+
+    async function run(){
+        const wasmBytes = new Uint8Array(wasmBinary);
+
+        WebAssembly.instantiate(wasmBytes)
+            .then(obj => {
+                console.log(obj.instance.exports.main());
+            })
+
+    }
+
+
+
+</script>
+
+
+
+
+
+
+
+
+<!--        class MyVisitor extends SimpleLangVisitor {-->
+<!--        visitStart(ctx) {-->
+<!--        return this.visit(ctx.expr());-->
+<!--        }-->
+
+<!--        visitExpr(ctx) {-->
+<!--        if (ctx.INT()) {-->
+<!--        return { type: 'INT', value: parseInt(ctx.INT().getText()) };-->
+<!--} else if (ctx.getChildCount() === 1) {-->
+<!--return this.visit(ctx.expr(0));-->
+<!--} else {-->
+<!--const left = this.visit(ctx.expr(0));-->
+<!--const right = this.visit(ctx.expr(1));-->
+<!--const operator = ctx.getChild(1).getText();-->
+<!--return { type: operator, left, right };-->
+<!--}-->
+<!--}-->
+<!--}-->
+
+<!--const input = "2 + (3 * 4)";-->
+<!--const chars = new antlr4.InputStream(input);-->
+<!--const lexer = new SimpleLangLexer(chars);-->
+<!--const tokens = new antlr4.CommonTokenStream(lexer);-->
+<!--const parser = new SimpleLangParser(tokens);-->
+<!--const tree = parser.start();-->
+
+<!--const visitor = new MyVisitor();-->
+<!--const ast = visitor.visit(tree);-->
+<!--console.log(ast);-->
+<!--&gt;-->
+<!--</script>-->
+
+</body>
+</html>
