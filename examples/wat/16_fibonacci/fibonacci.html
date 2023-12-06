@@ -19,23 +19,23 @@
         return jsFib(n-1) + jsFib(n-2);
     }
 
-    // (async () => {
-    //     let wasm = await WebAssembly.instantiateStreaming(
-    //         fetch('fib.wasm'), {});
-    //     let wasmFib = wasm.instance.exports.fib;
-    //
-    //
-    //
-    //
-    //     // console.time('Time it takes to run the JS function')
-    //     // console.log(jsFib(10));
-    //     // console.timeEnd('Time it takes to run the JS function')
-    //     //
-    //     // console.time('Time it takes to run the WASM function')
-    //     // console.log(wasmFib(10));
-    //     // console.timeEnd('Time it takes to run the WASM function')
-    //
-    // })();
+    (async () => {
+        let wasm = await WebAssembly.instantiateStreaming(
+            fetch('fib.wasm'), {});
+        let wasmFib = wasm.instance.exports.fib;
+
+
+
+
+        console.time('Time it takes to run the JS function')
+        console.log(jsFib(10));
+        console.timeEnd('Time it takes to run the JS function')
+
+        console.time('Time it takes to run the WASM function')
+        console.log(wasmFib(10));
+        console.timeEnd('Time it takes to run the WASM function')
+
+    })();
 
 
 
@@ -54,24 +54,24 @@
 
     // })();
 
-    setTimeout(() => {
-        console.log('setTimeout first');
-    }, 0);
-    myclick()
-    WebAssembly.instantiateStreaming(fetch('fib.wasm'), {})
-        .then( (obj) => {
-            let wasmFib = obj.instance.exports.fib;
-            setTimeout(() => {
-                console.log('setTimeout function executed');
-            }, 0);
-            // console.log(wasmFib(45));
-            obj.instance.exports.fib(45);
-            console.log("po fib")
-
-
-        }).catch((error) => {
-        console.log("error")
-    });
+    // setTimeout(() => {
+    //     console.log('setTimeout first');
+    // }, 0);
+    // myclick()
+    // WebAssembly.instantiateStreaming(fetch('fib.wasm'), {})
+    //     .then( (obj) => {
+    //         let wasmFib = obj.instance.exports.fib;
+    //         setTimeout(() => {
+    //             console.log('setTimeout function executed');
+    //         }, 0);
+    //         // console.log(wasmFib(45));
+    //         obj.instance.exports.fib(45);
+    //         console.log("po fib")
+    //
+    //
+    //     }).catch((error) => {
+    //     console.log("error")
+    // });
 
 </script>
 </body>
