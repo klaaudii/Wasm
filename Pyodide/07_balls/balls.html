@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.20.0/full/pyodide.js"></script>
+</head>
+
+<body>
+<canvas id="canvas" width="512" height="512"></canvas>
+<span id="frameRate"></span>
+
+<script>
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const object_radius = 3;
+    function drawBall(x, y) {
+        ctx.beginPath();
+        ctx.fillRect(x, y, object_radius, object_radius)
+        //ctx.arc(this.xx, this.yy, object_radius, 0, Math.PI * 2);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+    }
+    async function main() {
+
+
+
+
+
+
+        // downloads the Pyodide package and sets up the environment necessary to run Python code in the browser.
+        // This includes compiling Python modules and making them available to the interpreter,
+        // as well as setting up the communication channel between the Python interpreter and the browser's JavaScript environment.
+        let pyodide = await loadPyodide();
+
+
+        await fetch('balls.py').then(response => response.text()).then( code => pyodide.runPython(code));
+
+        var counter = 0;
+        var lastTime;
+        var tm;
+        pyodide.globals.get('init_balls')()
+        function animate() {
+            // clear
+
+            counter++;
+            if (counter >= 100 && counter % 100 === 0) {
+                tm = Date.now();
+                frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+                lastTime = tm;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.rect(0, 0, 512, 512);
+            ctx.fillStyle = "blue";
+            ctx.fill();
+            ctx.closePath()
+            pyodide.globals.get('animate')()
+            requestAnimationFrame(animate);
+        }
+        lastTime = Date.now();
+        requestAnimationFrame(animate);
+
+
+
+
+
+
+
+
+
+
+
+        //
+        //
+        // pyodide.globals.set("x", 4)
+        // pyodide.globals.set("square", x => x*x)
+        // console.log(pyodide.globals.get('square')(pyodide.globals.get('x')))
+        //
+        //
+        // await pyodide.loadPackage("numpy");
+        // pyodide.runPython(`
+        // import numpy as np
+        // a = [[1, 0], [0, 1]]
+        // b = [[4, 1], [2, 2]]
+        // print(np.dot(a, b))`)
+    };
+
+    main();
+</script>
+</body>
+</html>
