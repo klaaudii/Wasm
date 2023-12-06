@@ -6,6 +6,7 @@
     <title>Ball movement</title>
 </head>
 <body style="background-color: white;">
+    <p>WebAssembly</p>
 <canvas id="cnvs" width="512" height="512"></canvas>
 <br>
 <span id="frameRate"></span>
@@ -20,7 +21,7 @@
     ctx.clearRect(0, 0, cnvs_size, cnvs_size);
     const bg_color = 500; //background color (BLUE)
     const pixel_count = cnvs_size * cnvs_size;
-    const object_count = 10000;    //the best nasobok 4
+    const object_count = 3000;    //the best nasobok 4
     const object_radius = 3;
     const object_base_8 = pixel_count*4;
     const x_offset = 0;
@@ -122,7 +123,7 @@
         counter++;
         if (counter >= 100 && counter % 100 === 0) {
             tm = Date.now();
-            frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+            frameRate.innerHTML = "fps: " + (100000.0/(tm - lastTime)).toString();
             lastTime = tm;
 
         }
@@ -137,7 +138,7 @@
         counter++;
         if (counter >= 100 && counter % 1000 === 0) {
             tm = Date.now();
-            frameRate.innerHTML = (10000.0/(tm - lastTime)).toString();
+            frameRate.innerHTML = "fps: " + (10000.0/(tm - lastTime)).toString();
             lastTime = tm;
         }
         if (counter % 200 === 0) {
