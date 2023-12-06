@@ -87,12 +87,12 @@ function Ball(xx, yy, vx, vy, color) {
  function animate() {
  // clear
 
- // counter++;
- // if (counter >= 100 && counter % 100 === 0) {
- //    tm = Date.now();
- //    frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
- //    lastTime = tm;
- //  }
+ counter++;
+ if (counter >= 100 && counter % 100 === 0) {
+    tm = Date.now();
+    frameRate.innerHTML = (100000.0/(tm - lastTime)).toString();
+    lastTime = tm;
+  }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
 ctx.rect(0, 0, cnvs_size, cnvs_size);
@@ -117,17 +117,17 @@ ctx.closePath()
 
 
 
-     var t = performance.now();
-     var dt = t - startTime;
-     if (dt >= 1000) {
-         // Calculate the frames drawn over the period of time
-         var fps = frames * 1000 / dt;
-         frameRate.innerHTML = "fps: " + fps.toString();
-         // Restart the values
-         frames = 0;
-         startTime = t;
-     }
-     frames++;
+     // var t = performance.now();
+     // var dt = t - startTime;
+     // if (dt >= 1000) {
+     //     // Calculate the frames drawn over the period of time
+     //     var fps = frames * 1000 / dt;
+     //     frameRate.innerHTML = "fps: " + fps.toString();
+     //     // Restart the values
+     //     frames = 0;
+     //     startTime = t;
+     // }
+     // frames++;
 
 
 
